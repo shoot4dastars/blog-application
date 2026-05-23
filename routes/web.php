@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PostController;
 use Illuminate\Support\Facades\Route;
 
 // Guest routes (only accessible when NOT logged in)
@@ -17,12 +18,19 @@ Route::middleware(['auth.custom'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+
+    // Post routes - protected routes (create, store, edit, update, destroy)
+    Route::resource('posts', PostController::class)->except(['index', 'show']);
 });
+
+// Public post routes (anyone can view)
+Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
+Route::get('/posts/{post:slug}', [PostController::class, 'show'])->name('posts.show');
 
 // Public routes
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('home');
 
 // Task 1: Lifecycle test route
 Route::get('/lifecycle-test', function () {

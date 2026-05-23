@@ -10,9 +10,14 @@
 <nav class="bg-white shadow-lg">
     <div class="max-w-7xl mx-auto px-4">
         <div class="flex justify-between h-16">
-            <div class="flex items-center">
+            <div class="flex items-center space-x-8">
+                <!-- Logo / Home link -->
                 <a href="/" class="text-xl font-bold text-gray-800">Laravel Blog</a>
+
+                <!-- BLOG LINK - ADD THIS LINE -->
+                <a href="{{ route('posts.index') }}" class="text-gray-600 hover:text-gray-900">Blog</a>
             </div>
+
             <div class="flex items-center space-x-4">
                 @auth
                     <span class="text-gray-600">{{ auth()->user()->name }}</span>
