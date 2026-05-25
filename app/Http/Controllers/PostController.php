@@ -7,6 +7,8 @@ use App\Models\Category;
 use App\Models\Status;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Http\Requests\StorePostRequest;
+use App\Http\Requests\UpdatePostRequest;
 
 class PostController extends Controller
 {
@@ -36,17 +38,10 @@ class PostController extends Controller
     /**
      * Store a newly created post in storage.
      */
-    public function store(Request $request)
+    public function store(StorePostRequest $request)
     {
-        // Validate the request
-        $validated = $request->validate([
-            'title' => 'required|string|min:5|max:255',
-            'slug' => 'nullable|string|unique:posts,slug',
-            'body' => 'required|string|min:50',
-            'category_ids' => 'nullable|array',
-            'category_ids.*' => 'exists:categories,id',
-            'status' => 'required|in:draft,published',
-        ]);
+        // Get validated data
+        $validated = $request->validated();
 
         // Generate slug from title if not provided
         if (empty($validated['slug'])) {
@@ -77,7 +72,6 @@ class PostController extends Controller
         return redirect()->route('posts.show', $post->slug)
             ->with('success', 'Post created successfully!');
     }
-
     /**
      * Display the specified post.
      */
@@ -120,51 +114,56 @@ class PostController extends Controller
     /**
      * Update the specified post in storage.
      */
-    public function update(Request $request, Post $post)
+    public function update(UpdatePostRequest $request, Post $post)
     {
-        // Authorize user
-        if (auth()->id() !== $post->user_id && !auth()->user()->isAdmin()) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        // Validate the request
-        $validated = $request->validate([
-            'title' => 'required|string|min:5|max:255',
-            'slug' => 'nullable|string|unique:posts,slug,' . $post->id,
-            'body' => 'required|string|min:50',
-            'category_ids' => 'nullable|array',
-            'category_ids.*' => 'exists:categories,id',
-            'status' => 'required|in:draft,published',
-        ]);
+        // Get validated data
+        $validated = $request->validated();
 
         // Generate slug from title if not provided
-        if (empty($validated['slug'])) {
+        if (!empty($validated['title']) && empty($validated['slug'])) {
             $validated['slug'] = Str::slug($validated['title']);
         }
 
-        // Update the post
-        $post->update([
-            'title' => $validated['title'],
-            'slug' => $validated['slug'],
-            'body' => $validated['body'],
-        ]);
+        // Update only the fields that were provided
+        $updateData = [];
 
-        // Sync categories
-        if (!empty($validated['category_ids'])) {
-            $post->categories()->sync($validated['category_ids']);
-        } else {
-            $post->categories()->detach();
+        if (isset($validated['title'])) {
+            $updateData['title'] = $validated['title'];
         }
 
-        // Update or create status
-        if ($post->status) {
-            $post->status->update(['status' => $validated['status']]);
-        } else {
-            Status::create([
-                'status' => $validated['status'],
-                'statusable_type' => Post::class,
-                'statusable_id' => $post->id,
-            ]);
+        if (isset($validated['slug'])) {
+            $updateData['slug'] = $validated['slug'];
+        }
+
+        if (isset($validated['body'])) {
+            $updateData['body'] = $validated['body'];
+        }
+
+        // Update the post
+        if (!empty($updateData)) {
+            $post->update($updateData);
+        }
+
+        // Sync categories if provided
+        if (isset($validated['category_ids'])) {
+            if (!empty($validated['category_ids'])) {
+                $post->categories()->sync($validated['category_ids']);
+            } else {
+                $post->categories()->detach();
+            }
+        }
+
+        // Update status if provided
+        if (isset($validated['status'])) {
+            if ($post->status) {
+                $post->status->update(['status' => $validated['status']]);
+            } else {
+                Status::create([
+                    'status' => $validated['status'],
+                    'statusable_type' => Post::class,
+                    'statusable_id' => $post->id,
+                ]);
+            }
         }
 
         return redirect()->route('posts.show', $post->slug)
