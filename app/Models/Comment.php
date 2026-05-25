@@ -24,4 +24,15 @@ class Comment extends Model
     {
         return $this->belongsTo(Post::class);
     }
+
+    // Helper to check if user can edit/delete
+    public function canEdit($user)
+    {
+        return $user && ($user->id === $this->user_id || $user->isAdmin());
+    }
+
+    public function canDelete($user)
+    {
+        return $user && ($user->id === $this->user_id || $user->isAdmin());
+    }
 }

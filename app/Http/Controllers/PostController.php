@@ -80,10 +80,10 @@ class PostController extends Controller
         // Increment view count
         $post->increment('view_count');
 
-        // Load relationships
+        // Load relationships including comments with users
         $post->load('user', 'categories', 'comments.user', 'status');
 
-        // Get related posts (same categories, excluding current)
+        // Get related posts
         $relatedPosts = Post::published()
             ->whereHas('categories', function ($query) use ($post) {
                 $query->whereIn('categories.id', $post->categories->pluck('id'));

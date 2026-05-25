@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\CommentController;
 use Illuminate\Support\Facades\Route;
 
 // Guest routes (only accessible when NOT logged in)
@@ -21,6 +22,9 @@ Route::middleware(['auth.custom'])->group(function () {
 
     // Post routes - protected routes (create, store, edit, update, destroy)
     Route::resource('posts', PostController::class)->except(['index', 'show']);
+
+    // Comment routes
+    Route::resource('comments', CommentController::class)->only(['store', 'update', 'destroy']);
 });
 
 // Public post routes (anyone can view)

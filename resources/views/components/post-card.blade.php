@@ -38,7 +38,7 @@
             </a>
 
             @auth
-                @if(auth()->id() === $post->user_id || (auth()->user()->isAdmin ?? false))
+                @if(auth()->id() === $post->user_id || (auth()->user() && auth()->user()->isAdmin()))
                     <div class="space-x-2">
                         <a href="{{ route('posts.edit', $post) }}"
                            class="text-yellow-500 hover:text-yellow-700 text-sm">Edit</a>
