@@ -28,16 +28,18 @@
                     </div>
 
                     @auth
-                        @if(auth()->id() === $post->user_id || auth()->user()->isAdmin())
+                        @if(auth()->id() === $post->user_id || (auth()->user()->isAdmin ?? false))
                             <div class="space-x-2">
                                 <a href="{{ route('posts.edit', $post) }}"
-                                   class="text-yellow-500 hover:text-yellow-700">Edit</a>
+                                   class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-3 rounded text-sm transition">
+                                    Edit
+                                </a>
                                 <form action="{{ route('posts.destroy', $post) }}"
                                       method="POST" class="inline">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit"
-                                            class="text-red-500 hover:text-red-700"
+                                            class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm transition"
                                             onclick="return confirm('Are you sure you want to delete this post?')">
                                         Delete
                                     </button>
@@ -57,6 +59,23 @@
 
                 <div class="prose max-w-none mb-8">
                     {!! nl2br(e($post->body)) !!}
+                </div>
+
+                <!-- Comments Section -->
+                <div class="mt-8 pt-6 border-t">
+                    <h3 class="text-xl font-bold mb-4">Comments ({{ $post->comments->count() }})</h3>
+
+                    @foreach($post->comments as $comment)
+                        <div class="bg-gray-50 rounded-lg p-4 mb-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <strong class="text-gray-800">{{ $comment->user->name }}</strong>
+                                    <p class="text-gray-600 mt-1">{{ $comment->body }}</p>
+                                </div>
+                                <small class="text-gray-400">{{ $comment->created_at->diffForHumans() }}</small>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
 
                 @if(isset($relatedPosts) && $relatedPosts->count() > 0)
