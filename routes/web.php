@@ -3,7 +3,6 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\CommentController;
-use App\Http\Middleware\LogRequestDetails;
 use Illuminate\Support\Facades\Route;
 
 // Guest routes (only accessible when NOT logged in)
@@ -14,12 +13,6 @@ Route::middleware(['guest'])->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
 });
 
-// Apply LogRequestDetails to all posts routes (public and protected)
-Route::middleware([LogRequestDetails::class])->prefix('posts')->group(function () {
-    Route::get('/', [PostController::class, 'index'])->name('posts.index');
-    Route::get('/{post:slug}', [PostController::class, 'show'])->name('posts.show');
-});
-
 // Authenticated routes (require login AND active account)
 Route::middleware(['auth.custom', 'active'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -27,19 +20,36 @@ Route::middleware(['auth.custom', 'active'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
-    // Protected post routes (create, edit, update, delete)
-    Route::resource('posts', PostController::class)
-        ->except(['index', 'show'])
-        ->middleware([LogRequestDetails::class]);
+    // CREATE ROUTE - MUST COME FIRST (before the show route)
+    Route::get('/posts/create', [PostController::class, 'create'])->name('posts.create');
+
+    // EDIT ROUTE
+    Route::get('/posts/{post}/edit', [PostController::class, 'edit'])->name('posts.edit');
+
+    // STORE, UPDATE, DESTROY
+    Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
+    Route::put('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
+    Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
 
     // Comment routes
-    Route::resource('comments', CommentController::class)->only(['store', 'update', 'destroy']);
+    Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 });
 
-// Public routes
+// Admin routes
+Route::middleware(['auth.custom', 'active'])->prefix('admin')->group(function () {
+    Route::get('/roles', [App\Http\Controllers\RoleController::class, 'index'])->name('admin.roles');
+    Route::post('/roles/{role}/permissions', [App\Http\Controllers\RoleController::class, 'assignPermission'])->name('admin.roles.permissions.assign');
+});
+
+// PUBLIC ROUTES - THESE COME LAST
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+
+Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
+Route::get('/posts/{post:slug}', [PostController::class, 'show'])->name('posts.show');
 
 // Suspended account page
 Route::get('/suspended', function () {

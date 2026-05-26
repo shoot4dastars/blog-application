@@ -21,7 +21,15 @@
             <div class="flex items-center space-x-4">
                 @auth
                     <span class="text-gray-600">Welcome, {{ auth()->user()->name }}</span>
-                    <a href="{{ route('dashboard') }}" class="text-gray-600 hover:text-gray-900">Dashboard</a>
+
+                    @can('view-dashboard')
+                        <a href="{{ route('dashboard') }}" class="text-gray-600 hover:text-gray-900">Dashboard</a>
+                    @endcan
+
+                    @can('admin-access')
+                        <a href="{{ route('admin.roles') }}" class="text-purple-600 hover:text-purple-800">Admin</a>
+                    @endcan
+
                     <form method="POST" action="{{ route('logout') }}" class="inline">
                         @csrf
                         <button type="submit" class="text-red-600 hover:text-red-800">Logout</button>

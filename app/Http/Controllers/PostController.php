@@ -9,15 +9,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
 
 class PostController extends Controller
 {
     /**
      * Display a listing of published posts.
      */
+
+    use AuthorizesRequests;
     public function index()
     {
-        // Fetch published posts with user relationship, paginate 8 per page
         $posts = Post::published()
             ->with('user', 'categories', 'status')
             ->latest()
@@ -31,6 +34,7 @@ class PostController extends Controller
      */
     public function create()
     {
+        $this->authorize('create', Post::class);
         $categories = Category::all();
         return view('posts.create', compact('categories'));
     }
@@ -40,15 +44,13 @@ class PostController extends Controller
      */
     public function store(StorePostRequest $request)
     {
-        // Get validated data
+        $this->authorize('create', Post::class);
         $validated = $request->validated();
 
-        // Generate slug from title if not provided
         if (empty($validated['slug'])) {
             $validated['slug'] = Str::slug($validated['title']);
         }
 
-        // Create the post
         $post = Post::create([
             'title' => $validated['title'],
             'slug' => $validated['slug'],
@@ -57,12 +59,10 @@ class PostController extends Controller
             'view_count' => 0,
         ]);
 
-        // Attach categories if selected
         if (!empty($validated['category_ids'])) {
             $post->categories()->attach($validated['category_ids']);
         }
 
-        // Create polymorphic status
         Status::create([
             'status' => $validated['status'],
             'statusable_type' => Post::class,
@@ -72,18 +72,16 @@ class PostController extends Controller
         return redirect()->route('posts.show', $post->slug)
             ->with('success', 'Post created successfully!');
     }
+
     /**
      * Display the specified post.
      */
     public function show(Post $post)
     {
-        // Increment view count
+        $this->authorize('view', $post);
         $post->increment('view_count');
-
-        // Load relationships including comments with users
         $post->load('user', 'categories', 'comments.user', 'status');
 
-        // Get related posts
         $relatedPosts = Post::published()
             ->whereHas('categories', function ($query) use ($post) {
                 $query->whereIn('categories.id', $post->categories->pluck('id'));
@@ -100,11 +98,7 @@ class PostController extends Controller
      */
     public function edit(Post $post)
     {
-        // Authorize user (only owner or admin can edit)
-        if (auth()->id() !== $post->user_id && !auth()->user()->isAdmin()) {
-            abort(403, 'Unauthorized action.');
-        }
-
+        $this->authorize('update', $post);
         $categories = Category::all();
         $post->load('categories', 'status');
 
@@ -116,15 +110,13 @@ class PostController extends Controller
      */
     public function update(UpdatePostRequest $request, Post $post)
     {
-        // Get validated data
+        $this->authorize('update', $post);
         $validated = $request->validated();
 
-        // Generate slug from title if not provided
         if (!empty($validated['title']) && empty($validated['slug'])) {
             $validated['slug'] = Str::slug($validated['title']);
         }
 
-        // Update only the fields that were provided
         $updateData = [];
 
         if (isset($validated['title'])) {
@@ -139,12 +131,10 @@ class PostController extends Controller
             $updateData['body'] = $validated['body'];
         }
 
-        // Update the post
         if (!empty($updateData)) {
             $post->update($updateData);
         }
 
-        // Sync categories if provided
         if (isset($validated['category_ids'])) {
             if (!empty($validated['category_ids'])) {
                 $post->categories()->sync($validated['category_ids']);
@@ -153,7 +143,6 @@ class PostController extends Controller
             }
         }
 
-        // Update status if provided
         if (isset($validated['status'])) {
             if ($post->status) {
                 $post->status->update(['status' => $validated['status']]);
@@ -175,19 +164,13 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
-        // Authorize user
-        if (auth()->id() !== $post->user_id && !auth()->user()->isAdmin()) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        // Delete relationships first
-        $post->categories()->detach();  // Remove pivot table entries
-        $post->comments()->delete();     // Delete comments
+        $this->authorize('delete', $post);
+        $post->categories()->detach();
+        $post->comments()->delete();
         if ($post->status) {
-            $post->status->delete();      // Delete status
+            $post->status->delete();
         }
 
-        // Now delete the post
         $post->delete();
 
         return redirect()->route('posts.index')

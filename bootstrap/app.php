@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.custom' => AuthMiddleware::class,
             'guest' => GuestMiddleware::class,
             'active' => EnsureUserIsActive::class,
+            'log.details' => \App\Http\Middleware\LogRequestDetails::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

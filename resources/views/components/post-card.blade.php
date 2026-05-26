@@ -38,10 +38,13 @@
             </a>
 
             @auth
-                @if(auth()->id() === $post->user_id || (auth()->user() && auth()->user()->isAdmin()))
-                    <div class="space-x-2">
+                <div class="space-x-2">
+                    @can('update', $post)
                         <a href="{{ route('posts.edit', $post) }}"
                            class="text-yellow-500 hover:text-yellow-700 text-sm">Edit</a>
+                    @endcan
+
+                    @can('delete', $post)
                         <form action="{{ route('posts.destroy', $post) }}"
                               method="POST" class="inline">
                             @csrf
@@ -52,8 +55,8 @@
                                 Delete
                             </button>
                         </form>
-                    </div>
-                @endif
+                    @endcan
+                </div>
             @endauth
         </div>
     </div>
