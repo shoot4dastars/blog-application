@@ -25,7 +25,7 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect()->intended('/dashboard');
+            return redirect()->intended('/');
         }
 
         return back()->withErrors([
@@ -55,10 +55,8 @@ class AuthController extends Controller
             'is_active' => true,
         ]);
 
-        // Auto-login after registration
-        Auth::login($user);
-
-        return redirect('/dashboard');
+        // DON'T auto-login, redirect to login page
+        return redirect()->route('login')->with('success', 'Registration successful! Please login.');
     }
 
     // Handle logout

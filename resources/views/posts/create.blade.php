@@ -72,13 +72,20 @@
                     </div>
 
                     <div class="mb-6">
-                        <label for="status" class="block text-gray-700 font-bold mb-2">Status *</label>
-                        <select name="status" id="status"
-                                class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 @error('status') border-red-500 @enderror"
-                                required>
-                            <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Draft</option>
-                            <option value="published" {{ old('status') == 'published' ? 'selected' : '' }}>Published</option>
-                        </select>
+                        <label for="status" class="block text-gray-700 font-bold mb-2">Status</label>
+                        @if(auth()->user()->isAdmin())
+                            <select name="status" id="status"
+                                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 @error('status') border-red-500 @enderror"
+                                    required>
+                                <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Draft</option>
+                                <option value="published" {{ old('status') == 'published' ? 'selected' : '' }}>Published</option>
+                            </select>
+                        @else
+                            <input type="hidden" name="status" value="draft">
+                            <p class="text-gray-600 text-sm bg-gray-100 p-3 rounded">
+                                Your post will be saved as a draft and will be published after admin review.
+                            </p>
+                        @endif
                         @error('status')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror

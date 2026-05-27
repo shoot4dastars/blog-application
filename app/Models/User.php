@@ -6,10 +6,12 @@ use App\Enums\RoleName;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Laravel\Scout\Searchable;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, Searchable;
 
     protected $fillable = [
         'name',
@@ -75,5 +77,29 @@ class User extends Authenticatable
         }
 
         return false;
+    }
+
+    public function draftsCount()
+    {
+        return Post::whereHas('status', function($q) {
+            $q->where('status', 'draft');
+        })->where('user_id', $this->id)->count();
+    }
+
+    // SCOUT: Define what data gets indexed for search
+    public function toSearchableArray()
+    {
+        return [
+            'id' => $this->id,
+            'title' => $this->title,
+            'body' => $this->body,
+            'slug' => $this->slug,
+        ];
+    }
+
+    // SCOUT: Define the index name
+    public function searchableAs()
+    {
+        return 'posts_index';
     }
 }

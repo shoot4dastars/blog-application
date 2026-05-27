@@ -49,6 +49,12 @@ class RoleController extends Controller
             abort(403, 'Unauthorized access. Admin privileges required.');
         }
 
+        // Prevent modifying admin role permissions
+        $roleName = $role->name->value ?? $role->name;
+        if ($roleName === 'admin') {
+            return redirect()->back()->with('error', 'Admin role permissions cannot be modified. Admins have all permissions by default.');
+        }
+
         $request->validate([
             'permissions' => 'array',
             'permissions.*' => 'exists:permissions,id',
@@ -57,6 +63,6 @@ class RoleController extends Controller
         // Sync permissions (replace all existing with new ones)
         $role->permissions()->sync($request->permissions ?? []);
 
-        return redirect()->back()->with('success', 'Permissions updated successfully for ' . ($role->name->value ?? $role->name));
+        return redirect()->back()->with('success', 'Permissions updated successfully for ' . ucfirst($roleName));
     }
 }

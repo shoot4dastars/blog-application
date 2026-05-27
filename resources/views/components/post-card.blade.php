@@ -14,7 +14,7 @@
             @if($post->status)
                 <span class="ml-2 px-2 py-1 text-xs rounded
                     {{ $post->status->status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                    {{ ucfirst($post->status->status) }}
+                    {{ $post->status->status === 'published' ? 'Published' : 'Pending Review' }}
                 </span>
             @endif
         </div>

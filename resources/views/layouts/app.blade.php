@@ -13,27 +13,42 @@
 <nav class="bg-white shadow-lg">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
-            <div class="flex items-center space-x-8">
-                <a href="/" class="text-xl font-bold text-gray-800 hover:text-gray-600">Laravel Blog</a>
-                <a href="{{ route('posts.index') }}" class="text-gray-600 hover:text-gray-900">Blog</a>
+            <div class="flex items-center">
+                <a href="{{ route('home') }}" class="text-xl font-bold text-gray-800 hover:text-gray-600">Laravel Blog</a>
             </div>
 
             <div class="flex items-center space-x-4">
                 @auth
-                    <span class="text-gray-600">Welcome, {{ auth()->user()->name }}</span>
-
-                    @can('view-dashboard')
+                    <div class="flex items-center space-x-4">
+                        <span class="text-gray-600">Welcome, {{ auth()->user()->name }}</span>
+                        <a href="{{ route('posts.drafts') }}" class="text-gray-600 hover:text-gray-900">
+                            Drafts
+                            @if(auth()->user()->draftsCount() > 0)
+                                <span class="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                    {{ auth()->user()->draftsCount() }}
+                                </span>
+                            @endif
+                        </a>
                         <a href="{{ route('dashboard') }}" class="text-gray-600 hover:text-gray-900">Dashboard</a>
-                    @endcan
 
-                    @can('admin-access')
-                        <a href="{{ route('admin.roles') }}" class="text-purple-600 hover:text-purple-800">Admin</a>
-                    @endcan
+                        <!-- Admin Link - Only visible to admins with pending count -->
+                        @can('admin-access')
+                            @php
+                                $pendingCount = App\Models\Post::whereHas('status', function($q) {
+                                    $q->where('status', 'draft');
+                                })->count();
+                            @endphp
+                            <a href="{{ route('admin.roles') }}" class="text-purple-600 hover:text-purple-800 relative">
+                                Admin
+                            </a>
+                        @endcan
 
-                    <form method="POST" action="{{ route('logout') }}" class="inline">
-                        @csrf
-                        <button type="submit" class="text-red-600 hover:text-red-800">Logout</button>
-                    </form>
+                        <!-- Logout Button -->
+                        <form method="POST" action="{{ route('logout') }}" class="inline">
+                            @csrf
+                            <button type="submit" class="text-red-600 hover:text-red-800">Logout</button>
+                        </form>
+                    </div>
                 @endauth
                 @guest
                     <a href="{{ route('login') }}" class="text-blue-600 hover:text-blue-800">Login</a>

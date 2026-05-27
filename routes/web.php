@@ -35,6 +35,11 @@ Route::middleware(['auth.custom', 'active'])->group(function () {
     Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+
+    // Drafts route
+    Route::get('/posts/drafts', [PostController::class, 'drafts'])->name('posts.drafts');
+
+    Route::patch('/posts/{post}/publish', [PostController::class, 'publish'])->name('posts.publish');
 });
 
 // Admin routes
@@ -44,9 +49,7 @@ Route::middleware(['auth.custom', 'active'])->prefix('admin')->group(function ()
 });
 
 // PUBLIC ROUTES - THESE COME LAST
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+Route::get('/', [PostController::class, 'index'])->name('home');
 
 Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
 Route::get('/posts/{post:slug}', [PostController::class, 'show'])->name('posts.show');

@@ -16,6 +16,10 @@
 
                 <div class="overflow-x-auto">
                     @foreach($roles as $role)
+                        @php
+                            $isAdminRole = ($role->name->value ?? $role->name) === 'admin';
+                        @endphp
+
                         <div class="mb-8">
                             <h2 class="text-xl font-bold mb-4">{{ ucfirst($role->name->value ?? $role->name) }}</h2>
 
@@ -33,22 +37,41 @@
                                         <tr class="border-b">
                                             <td class="py-2 px-4">{{ $permission->name }}</td>
                                             <td class="py-2 px-4 text-center">
-                                                <input type="checkbox"
-                                                       name="permissions[]"
-                                                       value="{{ $permission->id }}"
-                                                       class="w-4 h-4"
-                                                    {{ $role->permissions->contains($permission) ? 'checked' : '' }}>
+                                                @if($isAdminRole)
+                                                    <!-- Admin role: always checked and disabled -->
+                                                    <input type="checkbox"
+                                                           name="permissions[]"
+                                                           value="{{ $permission->id }}"
+                                                           class="w-4 h-4"
+                                                           checked
+                                                           disabled>
+                                                    <input type="hidden" name="permissions[]" value="{{ $permission->id }}">
+                                                @else
+                                                    <!-- Other roles: can be toggled -->
+                                                    <input type="checkbox"
+                                                           name="permissions[]"
+                                                           value="{{ $permission->id }}"
+                                                           class="w-4 h-4"
+                                                        {{ $role->permissions->contains($permission) ? 'checked' : '' }}>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach
                                     </tbody>
                                 </table>
-                                <div class="mt-4">
-                                    <button type="submit"
-                                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">
-                                        Save Permissions for {{ ucfirst($role->name->value ?? $role->name) }}
-                                    </button>
-                                </div>
+
+                                @if(!$isAdminRole)
+                                    <div class="mt-4">
+                                        <button type="submit"
+                                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">
+                                            Save Permissions for {{ ucfirst($role->name->value ?? $role->name) }}
+                                        </button>
+                                    </div>
+                                @else
+                                    <div class="mt-4 text-sm text-gray-500 italic">
+                                        Admin role has all permissions by default and cannot be modified.
+                                    </div>
+                                @endif
                             </form>
                         </div>
                     @endforeach

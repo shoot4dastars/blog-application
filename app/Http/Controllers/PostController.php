@@ -21,6 +21,7 @@ class PostController extends Controller
     use AuthorizesRequests;
     public function index()
     {
+        // Show ONLY published posts to everyone
         $posts = Post::published()
             ->with('user', 'categories', 'status')
             ->latest()
@@ -78,10 +79,21 @@ class PostController extends Controller
      */
     public function show(Post $post)
     {
-        $this->authorize('view', $post);
+        // Check if post is a draft
+        if ($post->status && $post->status->status === 'draft') {
+            // Only allow owner or admin to view drafts
+            if (auth()->guest() || (auth()->id() !== $post->user_id && !auth()->user()->isAdmin())) {
+                abort(404, 'Post not found.');
+            }
+        }
+
+        // Increment view count
         $post->increment('view_count');
+
+        // Load relationships
         $post->load('user', 'categories', 'comments.user', 'status');
 
+        // Get related posts
         $relatedPosts = Post::published()
             ->whereHas('categories', function ($query) use ($post) {
                 $query->whereIn('categories.id', $post->categories->pluck('id'));
@@ -98,7 +110,11 @@ class PostController extends Controller
      */
     public function edit(Post $post)
     {
-        $this->authorize('update', $post);
+        // Check if user is authorized to edit this post
+        if (auth()->id() !== $post->user_id && !auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $categories = Category::all();
         $post->load('categories', 'status');
 
@@ -175,5 +191,49 @@ class PostController extends Controller
 
         return redirect()->route('posts.index')
             ->with('success', 'Post deleted successfully!');
+    }
+
+    public function drafts()
+    {
+        $user = auth()->user();
+
+        if ($user->isAdmin()) {
+            // Admin sees all drafts
+            $posts = Post::whereHas('status', function($q) {
+                $q->where('status', 'draft');
+            })->with('user', 'categories', 'status')
+                ->latest()
+                ->paginate(8);
+        } else {
+            // Regular users see only their own drafts
+            $posts = Post::whereHas('status', function($q) {
+                $q->where('status', 'draft');
+            })->where('user_id', $user->id)
+                ->with('user', 'categories', 'status')
+                ->latest()
+                ->paginate(8);
+        }
+
+        return view('posts.drafts', compact('posts'));
+    }
+    public function publish(Post $post)
+    {
+        // Only admin can publish
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Update or create status
+        if ($post->status) {
+            $post->status->update(['status' => 'published']);
+        } else {
+            Status::create([
+                'status' => 'published',
+                'statusable_type' => Post::class,
+                'statusable_id' => $post->id,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Post published successfully!');
     }
 }
